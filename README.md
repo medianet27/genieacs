@@ -5,7 +5,7 @@ chmod +x install-genieacs.sh
 sudo ./install-genieacs.sh
 <br/>
 <br/>
-wget https://raw.githubusercontent.com/medianet27/genieacs-tools/master/restore-genieacs.sh
+wget https://raw.githubusercontent.com/medianet27/genieacs/master/restore-genieacs.sh
 <br/>
 chmod +x restore-genieacs.sh
 <br/>
