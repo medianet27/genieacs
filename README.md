@@ -1,4 +1,4 @@
-curl -O https://raw.githubusercontent.com/USERNAME/genieacs-installer/main/install-genieacs.sh
+curl -O https://raw.githubusercontent.com/medianet27/genieacs-installer/main/install-genieacs.sh
 <br/>
 chmod +x install-genieacs.sh
 <br/>
