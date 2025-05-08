@@ -1,34 +1,71 @@
 #!/bin/bash
 
-# Instalasi otomatis GenieACS (tanpa Docker)
-# Tested on Ubuntu 20.04/22.04
+# GenieACS Installer Script
+# Supports: Ubuntu 18.04, 20.04, 22.04
+# Author: ChatGPT - OpenAI
 
 set -e
 
-echo "[+] Update system & install dependencies..."
-sudo apt update && sudo apt install -y \
-  git curl build-essential redis-server \
-  mongodb nodejs npm libcap2-bin ruby-full
+echo "======================================="
+echo " GenieACS Installer for Ubuntu"
+echo " Supported: 18.04, 20.04, 22.04"
+echo "======================================="
 
-echo "[+] Setting up Node.js v18 LTS..."
+# 1. Detect OS version
+source /etc/os-release
+OS_VER=$VERSION_ID
+echo "[+] Detected Ubuntu $OS_VER"
+
+if [[ "$OS_VER" != "18.04" && "$OS_VER" != "20.04" && "$OS_VER" != "22.04" ]]; then
+  echo "[-] Unsupported OS version: $OS_VER"
+  exit 1
+fi
+
+# 2. Update system and install core packages
+echo "[+] Updating system and installing base packages..."
+sudo apt update
+sudo apt install -y curl git build-essential redis-server \
+  nodejs npm libcap2-bin ruby-full gnupg
+
+# 3. Install Node.js v18.x from NodeSource
+echo "[+] Installing Node.js v18.x..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 
+# 4. Install MongoDB based on OS version
+echo "[+] Installing MongoDB..."
+if [[ "$OS_VER" == "18.04" ]]; then
+  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+  echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+  sudo apt update
+  sudo apt install -y mongodb-org
+  sudo systemctl enable mongod
+  sudo systemctl start mongod
+else
+  sudo apt install -y mongodb
+  sudo systemctl enable mongodb
+  sudo systemctl start mongodb
+fi
+
+# 5. Clone GenieACS repository
 echo "[+] Cloning GenieACS..."
 cd /opt
 sudo git clone https://github.com/genieacs/genieacs.git
 cd genieacs
 sudo npm install
 
-echo "[+] Creating GenieACS systemd services..."
-sudo tee /etc/systemd/system/genieacs-cwmp.service > /dev/null <<EOF
+# 6. Create systemd service files
+echo "[+] Creating systemd service files..."
+
+for svc in cwmp nbi fs; do
+sudo tee /etc/systemd/system/genieacs-$svc.service > /dev/null <<EOF
 [Unit]
-Description=GenieACS CWMP
+Description=GenieACS $svc
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/npm run start-cwmp
+ExecStart=/usr/bin/npm run start-$svc
 WorkingDirectory=/opt/genieacs
 Restart=always
 User=root
@@ -36,43 +73,16 @@ User=root
 [Install]
 WantedBy=multi-user.target
 EOF
+done
 
-sudo tee /etc/systemd/system/genieacs-nbi.service > /dev/null <<EOF
-[Unit]
-Description=GenieACS NBI
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/npm run start-nbi
-WorkingDirectory=/opt/genieacs
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo tee /etc/systemd/system/genieacs-fs.service > /dev/null <<EOF
-[Unit]
-Description=GenieACS FS
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/npm run start-fs
-WorkingDirectory=/opt/genieacs
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
+# 7. Enable and start services
 echo "[+] Enabling and starting GenieACS services..."
-sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable genieacs-cwmp genieacs-nbi genieacs-fs
 sudo systemctl start genieacs-cwmp genieacs-nbi genieacs-fs
 
-echo "[+] GenieACS Installed successfully!"
+# 8. Done
+echo "======================================="
+echo "[✓] GenieACS installed successfully!"
+echo "    Access NBI at http://<server-ip>:7557"
+echo "======================================="
