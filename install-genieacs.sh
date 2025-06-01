@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# GenieACS Installer Script
+# GenieACS Installer Script (Updated)
 # Supports: Ubuntu 18.04, 20.04, 22.04
 # Author: ChatGPT - OpenAI
 
@@ -25,7 +25,7 @@ fi
 echo "[+] Updating system and installing base packages..."
 sudo apt update
 sudo apt install -y curl git build-essential redis-server \
-  nodejs npm libcap2-bin ruby-full gnupg
+  libcap2-bin ruby-full gnupg python3 g++ make
 
 # 3. Install Node.js v18.x from NodeSource
 echo "[+] Installing Node.js v18.x..."
@@ -34,18 +34,20 @@ sudo apt install -y nodejs
 
 # 4. Install MongoDB based on OS version
 echo "[+] Installing MongoDB..."
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+
 if [[ "$OS_VER" == "18.04" ]]; then
-  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
   echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-  sudo apt update
-  sudo apt install -y mongodb-org
-  sudo systemctl enable mongod
-  sudo systemctl start mongod
-else
-  sudo apt install -y mongodb
-  sudo systemctl enable mongodb
-  sudo systemctl start mongodb
+elif [[ "$OS_VER" == "20.04" ]]; then
+  echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+elif [[ "$OS_VER" == "22.04" ]]; then
+  echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 fi
+
+sudo apt update
+sudo apt install -y mongodb-org
+sudo systemctl enable mongod
+sudo systemctl start mongod
 
 # 5. Clone GenieACS repository
 echo "[+] Cloning GenieACS..."
