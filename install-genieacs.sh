@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# GenieACS Installer Script (Official Method)
+# GenieACS Installer Script (Adaptive Node.js Version)
 # Supports: Ubuntu 18.04, 20.04, 22.04
 
 set -e
@@ -26,9 +26,15 @@ sudo apt update
 sudo apt install -y curl git build-essential redis-server \
   libcap2-bin ruby-full gnupg python3 g++ make
 
-# 3. Install Node.js v18.x
-echo "[+] Installing Node.js v18..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# 3. Install Node.js based on Ubuntu version
+if [[ "$OS_VER" == "18.04" ]]; then
+  NODE_VERSION="16"
+else
+  NODE_VERSION="18"
+fi
+
+echo "[+] Installing Node.js v$NODE_VERSION..."
+curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # 4. Install MongoDB 4.4
@@ -75,7 +81,7 @@ node -e "console.log('GENIEACS_UI_JWT_SECRET=' + require('crypto').randomBytes(1
 sudo chown genieacs:genieacs /opt/genieacs/genieacs.env
 sudo chmod 600 /opt/genieacs/genieacs.env
 
-# 8. Create systemd services
+# 8. Create systemd service files
 echo "[+] Creating systemd service files..."
 
 for svc in cwmp nbi fs ui; do
